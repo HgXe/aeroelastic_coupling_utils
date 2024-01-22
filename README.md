@@ -1,4 +1,4 @@
-# lsdo_project_template
+# aeroelastic_coupling_utils
 
 <!---
 [![Python](https://img.shields.io/pypi/pyversions/lsdo_project_template)](https://img.shields.io/pypi/pyversions/lsdo_project_template)
@@ -13,13 +13,9 @@
 [![Issues](https://img.shields.io/github/issues/LSDOlab/lsdo_project_template.svg)](https://github.com/LSDOlab/lsdo_project_template/issues)
 
 
-A template repository for LSDOlab projects
+In recent work on aeroelasticity simulations in the LSDO lab certain utilities and classes for aeroelastic coupling were copied from private repositories, with sometimes multiple copies appearing in the same Multidisciplinary Design Optimization (MDO) script. This repository serves as a centralized and standardized collection of these utilities. CSDL versions of these are available wherever necessary for applications.
 
-This repository serves as a template for all LSDOlab projects with regard to documentation, testing and hosting of open-source code.
-Note that template users need to edit the README badge definitions for their respective packages.
-
-*README.md file contains high-level information about your package: it's purpose, high-level instructions for installation and usage.*
-
+<!---
 # Installation
 
 ## Installation instructions for users
@@ -46,6 +42,8 @@ pip install -e ./lsdo_project_template
 For details on documentation, refer to the README in `docs` directory.
 
 For details on testing/pull requests, refer to the README in `tests` directory.
+
+-->
 
 # License
 This project is licensed under the terms of the **GNU Lesser General Public License v3.0**.
