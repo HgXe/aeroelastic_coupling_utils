@@ -28,8 +28,6 @@ If you want users to install a specific branch, run
 pip install git+https://github.com/LSDOlab/lsdo_project_template.git@branch
 ```
 
-<!-- **Enabled by**: `packages=find_packages()` in the `setup.py` file. -->
-
 ## Installation instructions for developers
 To install `lsdo_project_template`, first clone the repository and install using pip.
 On the terminal or command line, run
