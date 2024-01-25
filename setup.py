@@ -31,7 +31,7 @@ setup(
 #    description='A template repository/package for LSDOlab projects',
     long_description=long_description,
     long_description_content_type='text/markdown',
-#    packages=find_packages(),
+    packages=find_packages(),
 #    python_requires='>=3.9',
 #    platforms=['any'],
     install_requires=[
