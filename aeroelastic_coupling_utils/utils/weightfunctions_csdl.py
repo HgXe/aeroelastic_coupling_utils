@@ -22,8 +22,6 @@ class WeightFunctions(Model):
         weight_eps = self.declare_variable(weight_eps_name, shape=(1,))
         distance_array = self.declare_variable(in_name, shape=in_shape)
 
-        # TODO: Add a csdl.expand operation to expand the weight_eps parameter into a vector (for elementwise multiplication)
-
         if weight_func_name == 'Gaussian':
             # we first create a csdl object of the right shape that contains weight_eps 
             # weight_eps_arr = self.create_input('weight_eps_arr', val=weight_eps*np.ones(in_shape))
@@ -38,7 +36,6 @@ class WeightFunctions(Model):
         self.register_output(out_name, weight_weight_vec)
 
 
-
 if __name__ == '__main__':
     import numpy as np
     np.random.seed(1)
@@ -50,19 +47,31 @@ if __name__ == '__main__':
     out_name = 'test_weights'
     rng_dist_arr = np.random.random(input_dist_arr_shape)
 
+    # create test model that wraps the WeightFunctions model
+    test_model_Gaussian = Model()
+    test_model_Gaussian.add(WeightFunctions(Weight_func_name='Gaussian', in_name=in_name, 
+                                   in_shape=input_dist_arr_shape, out_name=out_name),
+                   name='weightfunction_model')
+    test_model_Gaussian.create_input(name='inp_test_array', val=rng_dist_arr)
+    test_model_Gaussian.connect('inp_test_array', 'weightfunction_model.{}'.format(in_name))
     # test Gaussian function
-    Weight_test_Gaussian = WeightFunctions(Weight_func_name='Gaussian', in_name=in_name, in_shape=input_dist_arr_shape, out_name=out_name)
-    Weight_test_Gaussian_sim = Simulator(Weight_test_Gaussian)
-    Weight_test_Gaussian_sim[in_name] = rng_dist_arr  # set random array as test input
+    # Weight_test_Gaussian = WeightFunctions(Weight_func_name='Gaussian', in_name=in_name, in_shape=input_dist_arr_shape, out_name=out_name)
+
+    Weight_test_Gaussian_sim = Simulator(test_model_Gaussian)
+    # Weight_test_Gaussian_sim[in_name] = rng_dist_arr  # set random array as test input
     Weight_test_Gaussian_sim.run()
 
     # test ThinPlateSpline function
-    Weight_test_ThinPlateSpline = WeightFunctions(Weight_func_name='ThinPlateSpline', in_name=in_name, in_shape=input_dist_arr_shape, out_name=out_name)
-    Weight_test_ThinPlateSpline_sim = Simulator(Weight_test_ThinPlateSpline)
-    Weight_test_ThinPlateSpline_sim[in_name] = rng_dist_arr  # set random array as test input
+    test_model_ThinPlateSpline = Model()
+    test_model_ThinPlateSpline.add(WeightFunctions(Weight_func_name='ThinPlateSpline', in_name=in_name, 
+                                   in_shape=input_dist_arr_shape, out_name=out_name),
+                   name='weightfunction_model')
+    test_model_ThinPlateSpline.create_input(name='inp_test_array', val=rng_dist_arr)
+    test_model_ThinPlateSpline.connect('inp_test_array', 'weightfunction_model.{}'.format(in_name))
+    Weight_test_ThinPlateSpline_sim = Simulator(test_model_ThinPlateSpline)
     Weight_test_ThinPlateSpline_sim.run()
 
-    print(Weight_test_Gaussian_sim[out_name])
+    print(Weight_test_Gaussian_sim['weightfunction_model.{}'.format(out_name)])
     print(Weight_test_ThinPlateSpline_sim[out_name])
-    print(Weight_test_Gaussian_sim['weight_eps'])
+    print(Weight_test_Gaussian_sim['weightfunction_model.weight_eps'])
     # print(Weight_test_ThinPlateSpline_sim['weight_eps'])
