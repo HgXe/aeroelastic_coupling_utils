@@ -1,77 +1,74 @@
-from csdl import Model
-from python_csdl_backend import Simulator
-import csdl
+import csdl_alpha as csdl
 
-class WeightFunctions(Model):
-    def initialize(self):
-        self.parameters.declare('Weight_func_name', types=str, default='Gaussian')
-        # self.parameters.declare('Weight_eps', types=float, default=1.)
-        self.parameters.declare('Weight_eps_name', types=str, default='weight_eps')
-        self.parameters.declare('in_name', types=str)
-        self.parameters.declare('in_shape', types=tuple)
-        self.parameters.declare('out_name', types=str)
-    
-    def define(self):
-        weight_func_name = self.parameters['Weight_func_name']
-        weight_eps_name = self.parameters['Weight_eps_name']
-        # weight_eps = self.parameters['Weight_eps']
-        in_name = self.parameters['in_name']
-        in_shape = self.parameters['in_shape']
-        out_name = self.parameters['out_name']
+class WeightFunctions:
+    def __init__(self, weight_func_name: str='Gaussian', weight_eps: float=1.):
+        """_summary_
 
-        weight_eps = self.declare_variable(weight_eps_name, shape=(1,))
-        distance_array = self.declare_variable(in_name, shape=in_shape)
+        Args:
+            weight_func_name (str, optional): _description_. Defaults to Gaussian.
+            weight_eps (float, optional): _description_. Defaults to 1..
+        """
+        self.weight_func_name = weight_func_name
+        self.weight_eps = weight_eps
 
-        if weight_func_name == 'Gaussian':
-            # we first create a csdl object of the right shape that contains weight_eps 
-            # weight_eps_arr = self.create_input('weight_eps_arr', val=weight_eps*np.ones(in_shape))
-            weight_eps_arr = csdl.expand(weight_eps, in_shape)
-            r_vec = (weight_eps_arr*distance_array)**2
-            weight_weight_vec = csdl.exp(-r_vec)
-        elif weight_func_name == 'ThinPlateSpline':
-            dist_log = csdl.log(distance_array)
-            dist_squared = distance_array**2
-            weight_weight_vec = dist_squared*dist_log
+    def evaluate(self, dist_array: csdl.Variable):
+        """_summary_
 
-        self.register_output(out_name, weight_weight_vec)
+        Args:
+            dist_array (csdl.Variable): _description_
 
+        Returns:
+            _type_: _description_
+        """
+        if self.weight_func_name == 'Gaussian':
+            weights_array = compute_gaussian(dist_array, self.weight_eps)
+        elif self.weight_func_name == 'ThinPlateSpline':
+            weights_array = compute_thinplatespline(dist_array)
+
+        return weights_array
+
+def compute_gaussian(dist_array: csdl.Variable, weight_eps: float=1.):
+    weight_eps_times_dist_array = weight_eps * dist_array
+    r_vec = csdl.square(weight_eps_times_dist_array)
+    weights_array = csdl.exp(-r_vec)
+    return weights_array
+
+def compute_thinplatespline(dist_array: csdl.Variable):
+    dist_log = csdl.log(dist_array, base=10)
+    dist_squared = csdl.square(dist_array)
+    weights_array = dist_squared*dist_log
+    return weights_array
 
 if __name__ == '__main__':
     import numpy as np
     np.random.seed(1)
     # Test basic functionality of CSDL model
-    # weight_eps = 0.1
-    # input_dist_arr = (np.array([[1, 2, 3], [4, 5, 6]]))
     input_dist_arr_shape = (3, 2)
-    in_name = 'test_array'
-    out_name = 'test_weights'
     rng_dist_arr = np.random.random(input_dist_arr_shape)
 
-    # create test model that wraps the WeightFunctions model
-    test_model_Gaussian = Model()
-    test_model_Gaussian.add(WeightFunctions(Weight_func_name='Gaussian', in_name=in_name, 
-                                   in_shape=input_dist_arr_shape, out_name=out_name),
-                   name='weightfunction_model')
-    test_model_Gaussian.create_input(name='inp_test_array', val=rng_dist_arr)
-    test_model_Gaussian.connect('inp_test_array', 'weightfunction_model.{}'.format(in_name))
-    # test Gaussian function
-    # Weight_test_Gaussian = WeightFunctions(Weight_func_name='Gaussian', in_name=in_name, in_shape=input_dist_arr_shape, out_name=out_name)
+    # Construct Gaussian test model
+    recorder_gaussian = csdl.Recorder()
+    recorder_gaussian.start()
+    test_model_Gaussian = WeightFunctions(weight_func_name='Gaussian', weight_eps=0.1)
+    dist_array_gaussian = csdl.Variable(value=rng_dist_arr)
+    # run Gaussian function test model
+    f_gaussian = test_model_Gaussian.evaluate(dist_array_gaussian)
+    recorder_gaussian.stop()
 
-    Weight_test_Gaussian_sim = Simulator(test_model_Gaussian)
-    # Weight_test_Gaussian_sim[in_name] = rng_dist_arr  # set random array as test input
-    Weight_test_Gaussian_sim.run()
+    # Construct ThinPlateSpline test model
+    recorder_thinplate = csdl.Recorder()
+    recorder_thinplate.start()
+    test_model_thinplate = WeightFunctions(weight_func_name='ThinPlateSpline', weight_eps=0.1)
+    dist_array_thinplate = csdl.Variable(value=rng_dist_arr)
+    # run Gaussian function test model
+    f_thinplate = test_model_thinplate.evaluate(dist_array_thinplate)
+    recorder_thinplate.stop()
 
-    # test ThinPlateSpline function
-    test_model_ThinPlateSpline = Model()
-    test_model_ThinPlateSpline.add(WeightFunctions(Weight_func_name='ThinPlateSpline', in_name=in_name, 
-                                   in_shape=input_dist_arr_shape, out_name=out_name),
-                   name='weightfunction_model')
-    test_model_ThinPlateSpline.create_input(name='inp_test_array', val=rng_dist_arr)
-    test_model_ThinPlateSpline.connect('inp_test_array', 'weightfunction_model.{}'.format(in_name))
-    Weight_test_ThinPlateSpline_sim = Simulator(test_model_ThinPlateSpline)
-    Weight_test_ThinPlateSpline_sim.run()
+    # execute both test models
+    recorder_gaussian.execute()
+    recorder_thinplate.execute()
 
-    print(Weight_test_Gaussian_sim['weightfunction_model.{}'.format(out_name)])
-    print(Weight_test_ThinPlateSpline_sim[out_name])
-    print(Weight_test_Gaussian_sim['weightfunction_model.weight_eps'])
+    print(f_gaussian.value)
+    print(f_thinplate.value)
+    # print(Weight_test_Gaussian_sim['weightfunction_model.weight_eps'])
     # print(Weight_test_ThinPlateSpline_sim['weight_eps'])
